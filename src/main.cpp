@@ -20,11 +20,11 @@ bool cooling = false;
 bool relayOpen = false;
 
 void log(float hum, float temp, bool cooling) {
-    Serial.print("");
+    Serial.print("$");
     Serial.print(humidity, 1);
-
+    Serial.print(" ");
     Serial.print(temperature, 1);
-    Serial.println();
+    Serial.println(";");
 }
 
 void openRelay() {
