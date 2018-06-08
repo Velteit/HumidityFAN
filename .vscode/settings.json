@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.env.linux": {
+        "PATH": "/home/blackcat/.platformio/penv/bin:/home/blackcat/.platformio/penv:/usr/share/Modules/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/home/blackcat/bin:/home/blackcat/bin",
+        "PLATFORMIO_CALLER": "vscode"
+    }
+}
