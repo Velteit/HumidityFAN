@@ -9,7 +9,6 @@
 #define BOUNDARY_PIN A0
 #define RED_LED_PIN A1
 #define GREEN_LED_PIN A2
-#define BUTTON_PIN 3
 
 DHT sensor;
 float humidity;
@@ -17,7 +16,6 @@ float fixedHumidity;
 float temperature;
 uint8_t maxBound;
 int delayTime = 10000;
-volatile bool powerDown;
 unsigned long humCheck;
 unsigned long boundaryCheck;
 volatile unsigned long buttonCheck;
@@ -36,7 +34,7 @@ void log(float hum, float temp, bool cooling) {
 }
 
 void openRelay() {
-    if (!relayOpen && !powerDown) {
+    if (!relayOpen) {
         Serial.println("Open relay");
         relayOpen = true;
         digitalWrite(RELAY_PIN, LOW);
@@ -64,38 +62,19 @@ bool setBoundary() {
     return false;
 }
 
-void toggle() {
-    if(millis() - buttonCheck > BUTTON_DELAY_TIME) {
-        buttonCheck = millis();
-        powerDown = !powerDown;
-        if(powerDown) {
-            cooling = false;
-            delayTime = 10000;
-            closeRelay();
-
-            digitalWrite(RED_LED_PIN, HIGH);
-            digitalWrite(GREEN_LED_PIN, LOW);
-        } else {
-            digitalWrite(RED_LED_PIN, LOW);
-            digitalWrite(GREEN_LED_PIN, HIGH);
-        }
-    }
-}
 
 void setup() {
     Serial.begin(9600);
 
     pinMode(RELAY_PIN, OUTPUT);
     pinMode(BOUNDARY_PIN, INPUT);
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
-    pinMode(RED_LED_PIN, OUTPUT);
-    pinMode(GREEN_LED_PIN, OUTPUT);
+    // pinMode(RED_LED_PIN, OUTPUT);
+    // pinMode(GREEN_LED_PIN, OUTPUT);
     
     relayOpen = true;
     digitalWrite(GREEN_LED_PIN, HIGH);
     closeRelay();
 
-    attachInterrupt(BUTTON_PIN, toggle, CHANGE);
 
     sensor.setup(DHT_PIN);
 
@@ -106,46 +85,45 @@ void setup() {
 }
 
 void loop() {
-    if (!powerDown) {
-        if (millis() - boundaryCheck > DELAY_TIME) {
-            boundaryCheck = millis();
+    if (millis() - boundaryCheck > DELAY_TIME) {
+        boundaryCheck = millis();
 
-            if(setBoundary()) {
-                Serial.print("Boundary level: ");
-                Serial.println(maxBound);
+        if(setBoundary()) {
+            Serial.print("Boundary level: ");
+            Serial.println(maxBound);
 
-                cooling = false;
+            cooling = false;
 
-                if (humidity < maxBound) {
-                    closeRelay();
-                    delayTime = 10000;
-                }
-            }
-        }
-
-        if (millis() - humCheck > delayTime) {
-            humCheck = millis();
-            humidity = sensor.getHumidity();
-            temperature = sensor.getTemperature();
-
-            if (!cooling && humidity > maxBound) {
-                cooling = true;
-                delayTime = 500;
-                fixedHumidity = humidity;
-            }
-
-            log(humidity, temperature, cooling);
-            Serial.println(fixedHumidity);
-
-            if (cooling) {
-                if (abs(humidity - fixedHumidity) < DELTA) {
-                    openRelay();
-                } else {
-                    closeRelay();
-                    cooling = false;
-                    delayTime = 10000;
-                }
+            if (humidity < maxBound) {
+                closeRelay();
+                delayTime = 10000;
             }
         }
     }
+
+    if (millis() - humCheck > delayTime) {
+        humCheck = millis();
+        humidity = sensor.getHumidity();
+        temperature = sensor.getTemperature();
+
+        if (!cooling && humidity > maxBound) {
+            cooling = true;
+            delayTime = 500;
+            fixedHumidity = humidity;
+        }
+
+        log(humidity, temperature, cooling);
+        Serial.println(fixedHumidity);
+
+        if (cooling) {
+            if (abs(humidity - fixedHumidity) < DELTA) {
+                openRelay();
+            } else {
+                closeRelay();
+                cooling = false;
+                delayTime = 10000;
+            }
+        }
+    }
+
 }
