@@ -3,11 +3,11 @@
 
 #define DELTA 10.0
 #define DELAY_TIME 500
-#define BUTTON_DELAY_TIME 100
-#define DHT_PIN 2
-#define RELAY_PIN 4
-#define BOUNDARY_PIN A0
-#define RED_LED_PIN A1
+#define DHT_PIN 1
+#define RELAY_PIN 0
+#define BOUNDARY_PIN A1
+#define RED_LED_PIN A0
+#define BLUE_LED_PIN A3
 #define GREEN_LED_PIN A2
 
 DHT sensor;
@@ -15,7 +15,7 @@ float humidity;
 float fixedHumidity;
 float temperature;
 uint8_t maxBound;
-int delayTime = 10000;
+int delayTime = 1000;
 unsigned long humCheck;
 unsigned long boundaryCheck;
 volatile unsigned long buttonCheck;
@@ -62,14 +62,23 @@ bool setBoundary() {
     return false;
 }
 
+void setLeds(float temp, float hum) {
+    int tempLed = map(temp, 0, 100, 0, 255);
+    int humLed = map(hum, 0, 100, 0, 255);
+
+    analogWrite(RED_LED_PIN, tempLed);
+    analogWrite(BLUE_LED_PIN, humLed);
+}
 
 void setup() {
     Serial.begin(9600);
 
     pinMode(RELAY_PIN, OUTPUT);
     pinMode(BOUNDARY_PIN, INPUT);
-    // pinMode(RED_LED_PIN, OUTPUT);
-    // pinMode(GREEN_LED_PIN, OUTPUT);
+
+    pinMode(BLUE_LED_PIN, OUTPUT);
+    pinMode(RED_LED_PIN, OUTPUT);
+    pinMode(GREEN_LED_PIN, OUTPUT);
     
     relayOpen = true;
     digitalWrite(GREEN_LED_PIN, HIGH);
@@ -89,14 +98,12 @@ void loop() {
         boundaryCheck = millis();
 
         if(setBoundary()) {
-            Serial.print("Boundary level: ");
-            Serial.println(maxBound);
 
             cooling = false;
 
             if (humidity < maxBound) {
                 closeRelay();
-                delayTime = 10000;
+                delayTime = 1000;
             }
         }
     }
@@ -113,15 +120,13 @@ void loop() {
         }
 
         log(humidity, temperature, cooling);
-        Serial.println(fixedHumidity);
+        setLeds(temperature, humidity);
 
         if (cooling) {
             if (abs(humidity - fixedHumidity) < DELTA) {
                 openRelay();
             } else {
                 closeRelay();
-                cooling = false;
-                delayTime = 10000;
             }
         }
     }
